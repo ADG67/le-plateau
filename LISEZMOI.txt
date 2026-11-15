@@ -1,0 +1,47 @@
+LE PLATEAU : mode d'emploi
+==========================
+
+Ce dossier contient l'appli complète. Il faut le mettre en ligne une fois, puis
+les élèves l'installent sur leur téléphone à partir du lien.
+
+1. Mettre l'appli en ligne (Netlify, gratuit)
+---------------------------------------------
+- Va sur https://app.netlify.com/drop et crée un compte gratuit.
+- Dézippe le fichier, puis glisse le dossier "le-plateau" entier dans la page.
+- Netlify te donne une adresse du type https://quelque-chose.netlify.app
+  Tu peux la renommer dans "Site configuration" (ex. le-plateau-agec.netlify.app).
+
+Ça marche aussi sur GitHub Pages ou sur un site d'établissement : il suffit de
+déposer tous les fichiers du dossier.
+
+2. Les deux adresses
+--------------------
+- Appli élèves : https://ton-site.netlify.app/
+- Espace prof :  https://ton-site.netlify.app/prof-espace-7k3q.html
+  Ne donne jamais cette deuxième adresse aux élèves. Garde-la en favori.
+
+3. Rendre des jeux visibles
+---------------------------
+Au départ, tous les jeux sont masqués.
+- Ouvre l'espace prof, onglet Jeux, coche les jeux à montrer.
+- Clique sur "Télécharger jeux.json" (bandeau jaune).
+- Remplace jeux.json dans ton dossier par celui que tu viens de télécharger,
+  puis remets le dossier en ligne (sur Netlify : onglet "Deploys", glisse à
+  nouveau le dossier).
+Les élèves voient le changement à la prochaine ouverture de l'appli.
+Même chose quand tu crées, modifies ou supprimes un jeu.
+
+4. Installer l'appli sur le téléphone de l'élève
+------------------------------------------------
+- Android (Chrome) : ouvrir le lien, puis "Installer" (bouton dans l'appli
+  ou menu ⋮ > Installer l'application).
+- iPhone (Safari) : ouvrir le lien, bouton Partager > "Sur l'écran d'accueil".
+Le QR code du lien élèves se crée dans l'espace prof, onglet Sauvegarde.
+
+5. Les résultats
+----------------
+À la fin d'un jeu, l'élève obtient un code qui commence par RES-.
+Il te l'envoie (ENT, Pronote, mail). Tu colles les codes, même en vrac, dans
+l'espace prof, onglet "Ajouter des codes".
+Les résultats restent dans le navigateur de ton ordinateur : fais une
+sauvegarde de temps en temps (onglet Sauvegarde).
