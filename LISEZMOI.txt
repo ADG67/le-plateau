@@ -16,8 +16,8 @@ déposer tous les fichiers du dossier.
 
 2. Les deux adresses
 --------------------
-- Appli élèves : https://ton-site.netlify.app/
-- Espace prof :  https://ton-site.netlify.app/prof-espace-7k3q.html
+- Appli élèves : https://adg67.github.io/le-plateau/
+- Espace prof :  https://adg67.github.io/le-plateau/prof-espace-7k3q.html
   Ne donne jamais cette deuxième adresse aux élèves. Garde-la en favori.
 
 3. Rendre des jeux visibles
