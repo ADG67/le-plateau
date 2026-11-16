@@ -362,14 +362,26 @@ const MISSIONS = [
  }
 ];
 const CODE_FINAL = MISSIONS.map(m=>m.code).join("");
+/* SUIVI EN DIRECT : adresse du script Google (Apps Script) */
+const DB = "https://escape-game-rivetoile-default-rtdb.europe-west1.firebasedatabase.app";
+const JEU_ID = "swiss-running";
 
 /* ============================================================
    ÉTAT
    ============================================================ */
-let S = {equipe:"",debut:null,fin:null,done:[],indices:{},erreurs:{},brouillons:{},ecran:"accueil",courante:0};
+let S = {id:"",equipe:"",debut:null,fin:null,done:[],indices:{},erreurs:{},brouillons:{},ecran:"accueil",courante:0};
 function save(){try{localStorage.setItem("escapeOnSwiss",JSON.stringify(S))}catch(e){}}
 function load(){try{const d=JSON.parse(localStorage.getItem("escapeOnSwiss"));if(d)S=Object.assign(S,d)}catch(e){}}
 load();
+if(!S.id){S.id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);save()}
+function envoyer(statut){
+  if(!DB||!S.debut||!S.equipe)return;
+  const corps={equipe:S.equipe,missions:S.done.length,courante:S.done.length<8?"Mission "+(S.done.length+1):"Coffre",
+    indices:Object.values(S.indices).reduce((a,b)=>a+b,0),erreurs:Object.values(S.erreurs).reduce((a,b)=>a+b,0),
+    temps_s:Math.round(((S.fin||Date.now())-S.debut)/1000),statut:statut||(S.fin?"terminé":"en cours"),maj:Date.now()};
+  try{fetch(DB+"/"+JEU_ID+"/"+S.id+".json",{method:"PUT",body:JSON.stringify(corps)}).catch(()=>{})}catch(e){}
+}
+setInterval(()=>{if(S.debut&&!S.fin&&!window.MODE_PROF)envoyer()},60000);
 
 const $=s=>document.querySelector(s);
 const app=$("#app");
@@ -402,8 +414,8 @@ function accueil(){
     <div class="regle"><b>Brouillon</b>Chaque mission a un brouillon pour vos calculs et vos notes.</div>
   </div>
   <div class="footer-prof">${S.debut?'<button class="btn ghost" id="btnReset">Nouvelle partie</button>':''}</div>`;
-  $("#go").onclick=()=>{const v=$("#inEquipe").value.trim();if(!v){$("#inEquipe").focus();$("#inEquipe").style.outline="3px solid #d52b1e";return}S.equipe=v;if(!S.debut)S.debut=Date.now();save();carte()};
-  if($("#btnReset"))$("#btnReset").onclick=()=>{if(confirm("Effacer la partie en cours ?")){S={equipe:"",debut:null,fin:null,done:[],indices:{},erreurs:{},brouillons:{},ecran:"accueil",courante:0};save();$("#chrono").textContent="00:00";accueil()}};
+  $("#go").onclick=()=>{const v=$("#inEquipe").value.trim();if(!v){$("#inEquipe").focus();$("#inEquipe").style.outline="3px solid #d52b1e";return}S.equipe=v;if(!S.debut)S.debut=Date.now();save();envoyer();carte()};
+  if($("#btnReset"))$("#btnReset").onclick=()=>{if(confirm("Effacer la partie en cours ?")){S={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),equipe:"",debut:null,fin:null,done:[],indices:{},erreurs:{},brouillons:{},ecran:"accueil",courante:0};save();$("#chrono").textContent="00:00";accueil()}};
 }
 
 function carte(){
@@ -460,7 +472,7 @@ function mission(i){
   app.querySelectorAll(".pick").forEach(p=>p.onclick=()=>{if(!S.done.includes(i))p.classList.toggle("on")});
   if(done){remplirCorrect(i);debrief(i,false);return}
   $("#indice").onclick=()=>{
-    const n=(S.indices[i]||0);if(n>=2)return;S.indices[i]=n+1;S.debut-=120000;save();
+    const n=(S.indices[i]||0);if(n>=2)return;S.indices[i]=n+1;S.debut-=120000;save();envoyer();
     $("#zoneInd").innerHTML=m.indices.slice(0,n+1).map((t,k)=>`<div class="indice"><b>Indice ${k+1} :</b> ${t}</div>`).join("");
     const b=$("#indice");const r=2-(n+1);b.textContent=`💡 Indice (${r} restant${r>1?"s":""}, +2 min)`;if(r<=0)b.disabled=true;
   };
@@ -480,12 +492,12 @@ function verifier(i){
     }
   });
   if(bons===total){
-    S.done.push(i);S.done=[...new Set(S.done)];save();majHaut();
+    S.done.push(i);S.done=[...new Set(S.done)];save();majHaut();envoyer();
     $("#zoneMsg").innerHTML=`<div class="msg ok">Mission réussie !</div>`;
     const a=app.querySelector(".actions");if(a)a.remove();
     debrief(i,true);
   } else {
-    S.erreurs[i]=(S.erreurs[i]||0)+1;S.debut-=30000;save();
+    S.erreurs[i]=(S.erreurs[i]||0)+1;S.debut-=30000;save();envoyer();
     $("#zoneMsg").innerHTML=`<div class="msg ko">Pas encore : ${bons} bonne${bons>1?"s":""} réponse${bons>1?"s":""} sur ${total}. Les cases en rouge sont à revoir (+30 s).${pickErr.length?"<br>"+pickErr.join("<br>"):""}</div>`;
     $("#zoneMsg").scrollIntoView({behavior:"smooth",block:"center"});
   }
@@ -515,7 +527,7 @@ function coffre(){
   <p>Entrez les 8 chiffres dans l'ordre des missions.</p>
   <div class="form" style="justify-content:center"><input id="inCode" inputmode="numeric" maxlength="8" style="max-width:260px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:26px;letter-spacing:6px" placeholder="••••••••"><button class="btn" id="ok">Ouvrir</button></div><div id="m"></div></div>`;
   $("#retour").onclick=carte;
-  $("#ok").onclick=()=>{if($("#inCode").value.trim()===CODE_FINAL){if(!S.fin)S.fin=Date.now();save();victoire()}else{$("#m").innerHTML='<div class="msg ko" style="margin-top:12px">Le coffre reste fermé. Vérifiez l\'ordre des chiffres.</div>'}};
+  $("#ok").onclick=()=>{if($("#inCode").value.trim()===CODE_FINAL){if(!S.fin)S.fin=Date.now();save();envoyer("terminé");victoire()}else{$("#m").innerHTML='<div class="msg ko" style="margin-top:12px">Le coffre reste fermé. Vérifiez l\'ordre des chiffres.</div>'}};
 }
 
 function victoire(){
@@ -534,7 +546,11 @@ function victoire(){
 }
 
 function prof(){
-  let h=`<button class="btn sec" id="retour">← Accueil</button><div class="prof" style="margin-top:14px"><h2>Corrigé professeur</h2>
+  let h0=`<div class="prof" style="margin-bottom:18px"><h2>Suivi en direct</h2>
+  <p style="margin:0 0 10px;color:#6b6b6b;font-size:14px" id="suiviInfo">Chargement…</p>
+  <div style="overflow-x:auto"><table id="suiviTab"><thead><tr><th>Équipe</th><th>Progression</th><th>En cours</th><th>Temps</th><th>Indices</th><th>Erreurs</th><th>Statut</th></tr></thead><tbody></tbody></table></div>
+  <div class="actions"><button class="btn sec" id="suiviMaj">Actualiser</button><button class="btn ghost" id="suiviReset">Vider la séance</button></div></div>`;
+  let h=h0+`<button class="btn sec" id="retour">← Accueil</button><div class="prof" style="margin-top:14px"><h2>Corrigé professeur</h2>
   <p><b>Code final du coffre : <span style="font-family:'JetBrains Mono',monospace;font-size:22px">${CODE_FINAL}</span></b></p>
   <p>Durée conseillée : 1 h 30 à 2 h. Étoiles : 3 en moins de 1 h 30, 2 jusqu'à 2 h 10, 1 au-delà (indices et erreurs compris). Chaque indice ajoute 2 min, chaque erreur 30 s.</p>`;
   MISSIONS.forEach((m,i)=>{
@@ -547,6 +563,26 @@ function prof(){
   });
   h+=`</div>`;
   app.innerHTML=h;$("#retour").remove();window.scrollTo(0,0);
+  $("#suiviMaj").onclick=suivi;
+  let armee=0;
+  $("#suiviReset").onclick=e=>{const b=e.target;if(Date.now()-armee>5000){armee=Date.now();b.textContent="Clique encore pour confirmer";return}
+    armee=0;fetch(DB+"/"+JEU_ID+".json",{method:"DELETE"}).then(()=>{b.textContent="Vider la séance";suivi()}).catch(()=>{b.textContent="Échec de l'effacement"})};
+  suivi();setInterval(suivi,10000);
+}
+function suivi(){
+  fetch(DB+"/"+JEU_ID+".json").then(r=>r.json()).then(o=>{
+    if(o&&o.error)throw new Error(o.error);
+    const now=Date.now();o=o||{};
+    const L=Object.values(o).sort((a,b)=>(b.statut==="terminé")-(a.statut==="terminé")||b.missions-a.missions||a.temps_s-b.temps_s);
+    const fini=L.filter(e=>e.statut==="terminé").length;
+    $("#suiviInfo").textContent=`${L.length} équipe${L.length>1?"s":""} connectée${L.length>1?"s":""} · ${fini} terminée${fini>1?"s":""} · mis à jour à ${new Date().toLocaleTimeString("fr-FR")}`;
+    $("#suiviTab tbody").innerHTML=L.map(e=>{
+      const inactif=(now-(+e.maj||0))/60000;
+      const st=e.statut==="terminé"?'<b style="color:#1f9d55">✅ Terminé</b>':inactif>3?`<span style="color:#d52b1e">⏸ inactif ${Math.round(inactif)} min</span>`:'🟢 en jeu';
+      const pc=Math.round(e.missions/8*100);
+      return `<tr><td><b>${esc(e.equipe)}</b></td><td><div style="background:#eee;border-radius:6px;height:10px;width:120px;display:inline-block;vertical-align:middle;overflow:hidden"><i style="display:block;height:100%;width:${pc}%;background:${e.statut==="terminé"?"#1f9d55":"#d52b1e"}"></i></div> ${e.missions}/8</td><td>${esc(e.courante)}</td><td style="font-family:'JetBrains Mono',monospace">${fmt(e.temps_s*1000)}</td><td>${e.indices}</td><td>${e.erreurs}</td><td>${st}</td></tr>`}).join("")||'<tr><td colspan="7">Aucune équipe pour l\'instant.</td></tr>';
+  }).catch(err=>{$("#suiviInfo").innerHTML=/denied/i.test(err.message)?"<b style='color:#d52b1e'>La base Firebase refuse l'accès (règles expirées ou limitées). Voir la note d'installation.</b>":"Lecture impossible, nouvel essai dans 10 s…"});
+
 }
 
 /* utilitaires */
