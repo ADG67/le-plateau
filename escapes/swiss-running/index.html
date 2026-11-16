@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escape game · Opération Swiss Running</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --noir:#111111; --gris:#6b6b6b; --clair:#f4f3ef; --blanc:#ffffff;
+  --rouge:#d52b1e; --rouge-f:#a81f15; --vert:#1f9d55; --bleu:#3A86D4; --rose:#E0679C; --lilas:#6A4C93;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:Archivo,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--clair);color:var(--noir);line-height:1.45;font-size:16px}
+button{font-family:inherit;cursor:pointer}
+.hidden{display:none!important}
+
+/* barre du haut */
+.top{position:sticky;top:0;z-index:20;background:var(--noir);color:#fff;display:flex;align-items:center;gap:14px;padding:10px 18px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.5px}
+.croix{width:30px;height:30px;background:var(--rouge);border-radius:6px;position:relative;flex:none}
+.croix:before,.croix:after{content:"";position:absolute;background:#fff;left:50%;top:50%;transform:translate(-50%,-50%)}
+.croix:before{width:18px;height:5px}.croix:after{width:5px;height:18px}
+.top .equipe{opacity:.8;font-size:14px}
+.top .sp{flex:1}
+.chrono{font-family:"JetBrains Mono",monospace;font-size:20px;background:#222;padding:4px 12px;border-radius:8px}
+.prog{height:6px;background:#333;width:100%;border-radius:4px;overflow:hidden;flex-basis:100%}
+.prog i{display:block;height:100%;background:var(--rouge);width:0;transition:width .5s}
+
+main{max-width:980px;margin:0 auto;padding:22px 16px 80px}
+
+/* accueil */
+.hero{background:var(--noir);color:#fff;border-radius:22px;padding:34px 28px;position:relative;overflow:hidden}
+.hero h1{font-size:clamp(30px,6vw,52px);line-height:1;margin:6px 0 14px;font-weight:900;text-transform:uppercase}
+.hero h1 span{color:var(--rouge)}
+.hero .kick{font-size:13px;letter-spacing:2px;text-transform:uppercase;opacity:.7}
+.hero p{max-width:620px;opacity:.92}
+.hero .bg{position:absolute;right:-40px;bottom:-40px;width:260px;height:260px;background:var(--rouge);border-radius:40px;opacity:.95;transform:rotate(12deg)}
+.hero .bg:before,.hero .bg:after{content:"";position:absolute;background:#fff;left:50%;top:50%;transform:translate(-50%,-50%)}
+.hero .bg:before{width:150px;height:42px}.hero .bg:after{width:42px;height:150px}
+.hero .inner{position:relative;z-index:1}
+.form{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.form input{flex:1;min-width:200px;padding:13px 14px;border-radius:10px;border:0;font-size:16px;font-family:inherit}
+.btn{border:0;border-radius:10px;padding:12px 18px;font-weight:800;font-size:15px;background:var(--rouge);color:#fff;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn.sec{background:#fff;color:var(--noir);border:2px solid var(--noir)}
+.btn.ghost{background:transparent;color:var(--gris);border:1px dashed #bbb;font-weight:600}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.regles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:18px 0}
+.regle{background:#fff;border-radius:var(--r);padding:16px;border-left:5px solid var(--rouge)}
+.regle b{display:block;margin-bottom:4px}
+
+/* carte des missions */
+.carte{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:10px}
+.mcard{background:#fff;border-radius:var(--r);padding:16px;border:2px solid transparent;text-align:left;font-size:15px;position:relative;min-height:118px}
+.mcard .n{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--gris)}
+.mcard h3{margin:4px 0 0;font-size:17px}
+.mcard.lock{opacity:.45;cursor:not-allowed}
+.mcard.open{border-color:var(--noir)}
+.mcard.done{border-color:var(--vert)}
+.mcard .etat{position:absolute;right:12px;top:12px;font-size:20px}
+.mcard .chiffre{position:absolute;right:14px;bottom:10px;font-family:"JetBrains Mono",monospace;font-size:26px;font-weight:700;color:var(--vert)}
+
+.cadenas{background:var(--noir);color:#fff;border-radius:var(--r);padding:18px;margin-top:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.digits{display:flex;gap:6px}
+.digits span{width:34px;height:44px;border-radius:8px;background:#2a2a2a;display:grid;place-items:center;font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:700}
+.digits span.ok{background:var(--vert)}
+
+/* mission */
+.mhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.mhead .badge{background:var(--rouge);color:#fff;font-weight:900;border-radius:8px;padding:4px 10px;font-size:14px}
+.mhead h2{margin:0;font-size:clamp(22px,4vw,30px);font-weight:900}
+.cadre{background:#fff;border-left:5px solid var(--noir);padding:12px 16px;border-radius:10px;margin:12px 0;font-weight:600}
+.doc{background:#fff;border-radius:var(--r);padding:16px 18px;margin:12px 0;border-top:5px solid var(--rose)}
+.doc h4{margin:0 0 8px;color:var(--rose);font-size:15px;text-transform:uppercase;letter-spacing:.5px}
+.doc p{margin:6px 0}
+.doc .src{font-size:12.5px;color:var(--gris);font-style:italic;margin-top:8px}
+.doc table{border-collapse:collapse;width:100%;font-size:15px}
+.doc td,.doc th{border:1px solid #ddd;padding:7px 9px;text-align:left}
+.doc th{background:#f5f5f5}
+.qbloc{background:#fff;border-radius:var(--r);padding:16px 18px;margin:14px 0;border-top:5px solid var(--bleu)}
+.qbloc h4{margin:0 0 10px;color:var(--bleu);font-size:15px;text-transform:uppercase;letter-spacing:.5px}
+.row{display:grid;grid-template-columns:1fr minmax(180px,280px);gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #eee}
+.row:last-child{border-bottom:0}
+.row .lab{font-size:15px}
+select,.num{width:100%;padding:10px;border-radius:8px;border:2px solid #ddd;font-size:15px;font-family:inherit;background:#fff}
+.num{font-family:"JetBrains Mono",monospace}
+.row.bad select,.row.bad .num{border-color:var(--rouge);background:#fff4f3}
+.row.good select,.row.good .num{border-color:var(--vert);background:#f1fbf5}
+.unit{display:flex;align-items:center;gap:6px}.unit span{color:var(--gris);font-weight:700}
+.picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pick{background:#fafafa;border:2px solid #e2e2e2;border-radius:12px;padding:12px;text-align:left;font-size:14px;min-height:92px;position:relative}
+.pick .ico{font-size:24px;display:block;margin-bottom:4px}
+.pick .sw{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid #999;vertical-align:middle;margin-right:4px}
+.pick.on{border-color:var(--noir);background:#fff;box-shadow:0 0 0 3px var(--noir) inset}
+.pick.on:after{content:"✓";position:absolute;right:8px;top:6px;font-weight:900}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+.msg{padding:12px 14px;border-radius:10px;margin:10px 0;font-weight:600}
+.msg.ko{background:#fff0ef;color:var(--rouge-f)}
+.msg.ok{background:#eaf8f0;color:#146c3b}
+.indice{background:#fffbe8;border:1px solid #f0d97a;border-radius:10px;padding:10px 14px;margin:8px 0}
+.indice b{color:#8a6d00}
+.brouillon{width:100%;min-height:110px;border-radius:10px;border:2px dashed #ccc;padding:12px;font-family:"JetBrains Mono",monospace;font-size:14px;background:#fffef9;resize:vertical}
+details.brouil{margin-top:14px}
+details.brouil summary{cursor:pointer;font-weight:700;color:var(--lilas)}
+
+.debrief{background:#fff;border-radius:var(--r);padding:18px;border:3px solid var(--vert);margin-top:16px}
+.debrief h3{margin:0 0 8px;color:var(--vert)}
+.debrief .code{font-family:"JetBrains Mono",monospace;font-size:44px;font-weight:700;color:var(--vert);text-align:center;margin:8px 0}
+.debrief p{margin:6px 0}
+
+/* fin */
+.fin{text-align:center;background:var(--noir);color:#fff;border-radius:22px;padding:36px 20px}
+.fin h1{font-size:clamp(30px,6vw,50px);margin:6px 0;font-weight:900}
+.etoiles{font-size:48px;letter-spacing:6px;margin:10px 0}
+.stats{display:flex;justify-content:center;gap:22px;flex-wrap:wrap;margin:14px 0}
+.stats div{background:#222;border-radius:12px;padding:12px 18px}
+.stats b{display:block;font-size:24px;font-family:"JetBrains Mono",monospace}
+
+/* prof */
+.prof{background:#fff;border-radius:var(--r);padding:20px;border-top:6px solid var(--lilas)}
+.prof h2{color:var(--lilas);margin-top:0}
+.prof h3{margin:18px 0 6px;color:var(--lilas)}
+.prof table{border-collapse:collapse;width:100%;font-size:14px}
+.prof td,.prof th{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}
+.prof th{background:#f3eff8}
+.footer-prof{text-align:center;margin-top:30px}
+
+canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+@media (max-width:620px){.row{grid-template-columns:1fr}.top{gap:8px}.chrono{font-size:17px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo"><div class="croix"></div>SWISS RUNNING</div>
+  <div class="equipe" id="lblEquipe"></div>
+  <div class="sp"></div>
+  <div class="chrono" id="chrono">00:00</div>
+  <div class="prog"><i id="progBar"></i></div>
+</header>
+
+<main id="app"></main>
+<canvas id="confetti"></canvas>
+
+<script>
+/* ============================================================
+   DONNÉES DU JEU · Dossier 9 « Mettre en scène l'offre » (On)
+   ============================================================ */
+const FACTEURS = ["Les éléments extérieurs","La signalétique au sol","L'éclairage","Les couleurs","Le personnel","Le mobilier","La décoration","L'essai du produit","La signalétique (ILV)","La musique","Les odeurs"];
+const FAMILLES = ["Éléments extérieurs","Éléments intérieurs fixes (décor)","Éléments vivants et sensoriels"];
+
+const DOC1 = `<div class="doc"><h4>Document 1 · Le corner On chez Run Green Strasbourg</h4>
+<p>Le magasin Run Green Strasbourg (29 rue du Faubourg de Pierre) consacre un mur de quatre mètres linéaires à la marque On. À l'extérieur, la vitrine éclairée présente l'enseigne Run Green et un kakémono On visible depuis la rue. À l'intérieur, les murs sont blancs et les étagères en bois clair, avec quelques touches de noir et de rouge qui reprennent les couleurs de la marque. À gauche, les chaussures homme sont présentées par usage (route, trail, marche urbaine) ; à droite, les modèles femme occupent le même volume. Au centre, un îlot en bois expose le textile plié par taille.</p>
+<p>Au-dessus des étagères, de grands visuels de coureurs en noir et blanc décorent les murs. Un panneau suspendu portant un pictogramme de chaussure indique l'espace chaussures et un second pictogramme de vêtement signale l'espace textile. Une flèche collée au sol conduit les clients vers la zone d'essai, au fond du magasin : un banc, un miroir en pied et un tapis de six mètres pour courir quelques foulées. Chaque étagère est éclairée par des spots orientables blancs. Les vendeurs portent un polo noir brodé du logo de la marque et un badge avec leur prénom. Une playlist à volume modéré est diffusée toute la journée, et l'on perçoit une légère odeur de bois et de caoutchouc neuf.</p>
+<p class="src">Source : observation en PFMP, description simulée du corner</p></div>`;
+
+const DOC3 = `<div class="doc"><h4>Document 3 · Les effets recherchés</h4>
+<p>Un facteur d'ambiance agit sur ce que le client voit, entend, sent ou touche pendant sa visite. Pris isolément, aucun élément ne suffit : c'est leur association qui crée l'atmosphère propre à l'enseigne. Pour choisir un facteur, le responsable se demande quel effet il recherche.</p>
+<p>Les effets les plus fréquents : attirer le client, développer le trafic, faciliter le repérage, informer, créer une identité de marque, permettre de tester pour déclencher l'achat, contribuer au bien-être, détendre, capter l'attention, développer la relation, rassurer, créer des contrastes, mettre en scène l'offre, faciliter la mise en situation, créer une atmosphère propice à une expérience unique, orienter, conforter les valeurs de la marque.</p>
+<p class="src">Source : définitions professionnelles du marketing du point de vente</p></div>`;
+
+const DOC4 = `<div class="doc"><h4>Document 4 · Le marketing sensoriel en chiffres</h4>
+<p>Le marketing sensoriel consiste à solliciter un ou plusieurs des cinq sens du consommateur pour rendre la visite plus agréable et favoriser l'achat. L'étude internationale menée par l'institut Walnut Unlimited pour Mood Media auprès de 10 039 consommateurs dans huit pays place la musique en tête des facteurs sensoriels : 38 % des consommateurs français déclarent rester plus longtemps en magasin grâce à elle et 55 % affirment qu'elle améliore leur humeur. Les senteurs arrivent juste derrière : 49 % des Français les apprécient.</p>
+<p>Une enquête Enov Research citée par Ipsos montre par ailleurs que 80 % des clients préfèrent qu'il y ait de la musique dans un lieu de vente et que 71 % jugeraient triste un lieu sans musique. Lorsque plusieurs sens sont sollicités, l'enseigne Intersport a constaté environ 10 % de ventes en plus et six minutes de présence supplémentaires en magasin. Attention : une musique ou une odeur qui ne colle ni à l'image de l'enseigne ni à sa clientèle peut faire baisser les ventes.</p>
+<p class="src">Source : Mood Media / Walnut Unlimited ; Ipsos, enquête Enov Research</p></div>`;
+
+const DOC6 = `<div class="doc"><h4>Document 6 · La zone d'essai et les contrôles du matin</h4>
+<p>Au fond du corner, le tuteur a installé une zone d'essai pensée pour plusieurs sens. Les clients peuvent presser un mur de semelles coupées en deux pour sentir l'amorti CloudTec et manipuler les tissus des vestes. La mise en scène reste sobre : murs clairs, étagères en bois, chaussures éclairées une à une par des spots. La playlist est mise à jour chaque semaine et diffusée à faible volume pour permettre la conversation. Aucune senteur artificielle n'est diffusée en continu ; seule l'odeur du bois et du caoutchouc neuf est perceptible, et un diffuseur à la fragrance fraîche et boisée est à l'étude. Le samedi, une fontaine à eau et des boissons isotoniques sont offertes après un essai sur le tapis.</p>
+<p>Chaque jour, les vendeurs font deux types de contrôles : les contrôles de marketing sensoriel (MS), qui gardent l'ambiance à son meilleur niveau, et les contrôles d'hygiène, de sécurité et de réglementation (HS), qui protègent clients et salariés.</p>
+<p class="src">Source : observation en PFMP, dispositif simulé</p></div>`;
+
+const DOC789 = `<div class="doc"><h4>Document 7 · Message de Marc Schneider</h4>
+<p>« J'aimerais que vous m'aidiez sur l'opération « Swiss Running », qui met en avant l'origine suisse de la marque On et ses produits running. Concentrez-vous sur les éléments d'ambiance du podium en vitrine. La marque nous a envoyé des recommandations, mais vous avez une marge de liberté. Marc »</p></div>
+<div class="doc"><h4>Document 8 · La Suisse et la marque On</h4>
+<p>La Suisse est connue pour ses montagnes (les Alpes, le Cervin), son chocolat, son fromage et son horlogerie, symbole de précision. Son drapeau, l'un des rares drapeaux carrés au monde, porte une croix blanche sur fond rouge. La marque On est née à Zurich en 2010. La conception reste réalisée en Suisse, la fabrication a lieu en Asie. En vitrine, évoquer la Suisse passe par les couleurs symboliques, des motifs simples et l'idée de précision et de performance.</p>
+<p class="src">Source : On (entreprise), Wikipédia ; rapport annuel On 2025</p></div>
+<div class="doc"><h4>Document 9 · Recommandations de la marque</h4>
+<p>Jouez sur les couleurs symboliques du pays dans la décoration (affiche, stickers, fanions) et choisissez des produits aux coloris neutres de la marque : blanc, noir ou gris. La vitrine contient au maximum quatre références : deux chaussures, un vêtement et un accessoire. Les objets de décoration doivent évoquer la course à pied et la Suisse, sans surcharger la vitrine.</p>
+<p class="src">Source : document interne simulé</p></div>`;
+
+const DOC10 = `<div class="doc"><h4>Document 10 · PLV et ILV</h4>
+<p>La PLV (publicité sur le lieu de vente), surnommée « média du dernier mètre », fait la promotion ponctuelle d'un produit ou d'une marque grâce à des éléments, souvent en carton, fournis par le fabricant au distributeur : affiche, stop-rayon, présentoir de comptoir, vitrophanie. L'ILV (information sur le lieu de vente) informe, oriente et guide les clients grâce à une signalétique installée de façon permanente par le distributeur : panneaux de rayon, pictogrammes, plans du magasin, étiquettes de prix.</p>
+<p>Les deux techniques ont des objectifs différents mais utilisent souvent les mêmes supports : supports classiques (kakémono, banderole, présentoir permanent), tactiles (borne interactive, QR Code) ou dynamiques (écran, totem vidéo). Le choix dépend de l'objectif, de la place disponible et du budget.</p>
+<p class="src">Source : définitions professionnelles de la PLV et de l'ILV</p></div>`;
+
+const DOC11 = `<div class="doc"><h4>Document 11 · Les résultats du corner On</h4>
+<table><tr><th>Indicateur</th><th>Semaine avant l'OP</th><th>Semaine de l'OP</th></tr>
+<tr><td>Entrées dans le corner</td><td>1 250</td><td>1 480</td></tr>
+<tr><td>Tickets de caisse</td><td>150</td><td>214</td></tr>
+<tr><td>Chiffre d'affaires</td><td>16 500 €</td><td>26 322 €</td></tr></table>
+<p class="src">Source : données internes simulées du magasin Run Green Strasbourg</p></div>`;
+
+const MISSIONS = [
+ {
+  titre:"L'inspection du corner", code:"4",
+  cadre:"Marc vous fait faire le tour du corner avant l'ouverture. Pour chaque observation, retrouvez le facteur d'ambiance concerné.",
+  docs:DOC1,
+  blocs:[{type:"select",titre:"Observation → facteur d'ambiance",options:FACTEURS,items:[
+    ["Une flèche collée au sol conduit vers le fond du magasin","La signalétique au sol"],
+    ["Des spots orientables blancs sur chaque étagère","L'éclairage"],
+    ["Un polo noir brodé du logo et un badge avec le prénom","Le personnel"],
+    ["Un tapis de six mètres, un banc et un miroir en pied","L'essai du produit"],
+    ["Des panneaux suspendus avec un pictogramme chaussure et un pictogramme vêtement","La signalétique (ILV)"],
+    ["Un kakémono On visible depuis la rue","Les éléments extérieurs"],
+    ["De grands visuels de coureurs en noir et blanc au-dessus des étagères","La décoration"],
+    ["Une légère odeur de bois et de caoutchouc neuf","Les odeurs"]
+  ]}],
+  indices:["Deux facteurs parlent de signalétique : l'un est posé par terre, l'autre est accroché en hauteur et informe.","Les visuels de coureurs ne servent ni à éclairer ni à informer : ils décorent. Le kakémono, lui, est vu depuis la rue."],
+  corrige:"La flèche au sol relève de la signalétique au sol, les spots de l'éclairage, le polo et le badge du personnel. Le tapis, le banc et le miroir permettent l'essai du produit. Les panneaux à pictogrammes sont de la signalétique (ILV). Le kakémono fait partie des éléments extérieurs, les visuels de coureurs de la décoration et l'odeur de bois et de caoutchouc des odeurs."
+ },
+ {
+  titre:"Ranger les onze facteurs", code:"7",
+  cadre:"Pour la réunion d'équipe, Marc veut que les onze facteurs d'ambiance soient classés en trois familles.",
+  docs:`<div class="doc"><h4>Document 2 · Les trois familles</h4><p><b>Éléments extérieurs</b> : tout ce que le client voit avant d'entrer (vitrine, façade, enseigne).</p><p><b>Éléments intérieurs fixes (décor)</b> : ce qui est installé dans le magasin et ne bouge pas pendant la journée.</p><p><b>Éléments vivants et sensoriels</b> : ce qui se vit, s'entend, se sent ou se fait avec le client.</p><p class="src">Source : synthèse du cours</p></div>`,
+  blocs:[{type:"select",titre:"Facteur → famille",options:FAMILLES,items:[
+    ["Les éléments extérieurs (vitrine, façade, enseigne)",FAMILLES[0]],
+    ["La signalétique au sol",FAMILLES[1]],
+    ["L'éclairage",FAMILLES[1]],
+    ["Les couleurs",FAMILLES[1]],
+    ["Le personnel",FAMILLES[2]],
+    ["Le mobilier",FAMILLES[1]],
+    ["La décoration",FAMILLES[1]],
+    ["L'essai du produit",FAMILLES[2]],
+    ["La signalétique (ILV)",FAMILLES[1]],
+    ["La musique",FAMILLES[2]],
+    ["Les odeurs",FAMILLES[2]]
+  ]}],
+  indices:["Une seule famille ne contient qu'un facteur.","Quatre facteurs sont « vivants et sensoriels » : deux touchent les sens sans se voir, un est une personne, un est une action du client."],
+  corrige:"Les éléments extérieurs forment à eux seuls la première famille. Les éléments intérieurs fixes regroupent la signalétique au sol, l'éclairage, les couleurs, le mobilier, la décoration et la signalétique (ILV). Les éléments vivants et sensoriels sont le personnel, l'essai du produit, la musique et les odeurs."
+ },
+ {
+  titre:"À quoi ça sert ?", code:"2",
+  cadre:"Un client curieux demande pourquoi le magasin a fait ces choix. Pour chaque facteur, choisissez l'effet recherché le plus juste.",
+  docs:DOC1+DOC3,
+  blocs:[{type:"select",titre:"Facteur → effet recherché",items:[
+    ["La flèche collée au sol vers la zone d'essai","Orienter",["Détendre","Orienter","Créer des contrastes","Rassurer le client"]],
+    ["Les spots blancs qui éclairent chaque étagère alors que le reste est en lumière douce","Créer des contrastes",["Développer la relation","Informer","Créer des contrastes","Orienter"]],
+    ["Le polo brodé et le badge avec le prénom","Rassurer le client",["Rassurer le client","Créer des contrastes","Détendre","Faciliter le repérage"]],
+    ["Le tapis de six mètres","Permettre de tester pour déclencher l'achat",["Informer","Attirer le client","Permettre de tester pour déclencher l'achat","Créer des contrastes"]],
+    ["La playlist à volume modéré","Détendre",["Orienter","Détendre","Faciliter le repérage","Informer"]],
+    ["Les murs blancs, le bois clair et les touches de noir et de rouge","Créer une identité de marque",["Orienter","Permettre de tester pour déclencher l'achat","Créer une identité de marque","Informer"]]
+  ]}],
+  indices:["Demandez-vous ce que le client fait ou ressent grâce à l'élément : il se déplace ? il se calme ? il essaie ?","Les couleurs reprennent celles de la marque : à quoi sert de retrouver partout les mêmes couleurs ?"],
+  corrige:"La flèche au sol sert à orienter le client. Les spots créent des contrastes entre les produits éclairés et le reste du magasin. La tenue et le badge rassurent le client, qui identifie tout de suite un vendeur. Le tapis permet de tester pour déclencher l'achat. La musique douce détend. Les couleurs reprises de la marque créent une identité de marque."
+ },
+ {
+  titre:"Les chiffres du sensoriel", code:"9",
+  cadre:"Marc veut convaincre le siège d'investir dans un diffuseur de parfum. Il vous demande de lui sortir les bons chiffres.",
+  docs:DOC4,
+  blocs:[{type:"numeric",titre:"Relevez ou calculez",items:[
+    ["Nombre de consommateurs interrogés par Walnut Unlimited",10039,0,""],
+    ["Part des Français qui restent plus longtemps en magasin grâce à la musique",38,0,"%"],
+    ["Part des Français pour qui la musique améliore l'humeur",55,0,"%"],
+    ["Minutes de présence en plus chez Intersport quand plusieurs sens sont sollicités",6,0,"min"],
+    ["Écart entre la part des clients qui préfèrent un lieu avec musique et ceux qui jugeraient triste un lieu sans musique",9,0,"points"]
+  ]}],
+  indices:["Tout est dans le document 4, sauf le dernier chiffre qu'il faut calculer.","L'écart se calcule par une soustraction entre deux pourcentages de l'enquête Enov Research. On l'exprime en points, pas en %."],
+  corrige:"L'étude porte sur 10 039 consommateurs. 38 % des Français restent plus longtemps grâce à la musique et 55 % disent qu'elle améliore leur humeur. Chez Intersport, solliciter plusieurs sens a fait gagner six minutes de présence. Enfin 80 − 71 = 9 points d'écart : dans les deux cas, une grande majorité de clients attend de la musique en magasin."
+ },
+ {
+  titre:"Cinq sens et check-list", code:"1",
+  cadre:"Il est 9 h 30. Avant d'ouvrir, vous vérifiez que le corner stimule bien les cinq sens, puis vous triez la check-list du matin.",
+  docs:DOC6,
+  blocs:[
+   {type:"select",titre:"Sens → dispositif du corner On",options:["Chaussures éclairées une à une par des spots","Playlist mise à jour chaque semaine, à faible volume","Odeur de bois et de caoutchouc neuf","Mur de semelles à presser pour sentir l'amorti","Boissons isotoniques offertes le samedi"],items:[
+     ["La vue","Chaussures éclairées une à une par des spots"],
+     ["L'ouïe","Playlist mise à jour chaque semaine, à faible volume"],
+     ["L'odorat","Odeur de bois et de caoutchouc neuf"],
+     ["Le toucher","Mur de semelles à presser pour sentir l'amorti"],
+     ["Le goût","Boissons isotoniques offertes le samedi"]
+   ]},
+   {type:"select",titre:"Check-list : MS (marketing sensoriel) ou HS (hygiène, sécurité, réglementation) ?",options:["MS","HS"],items:[
+     ["Vérifier le volume de la playlist","MS"],
+     ["Afficher les prix sur les produits et en vitrine","HS"],
+     ["Inviter les clients à essayer sur le tapis","MS"],
+     ["Désinfecter le banc et nettoyer les chaussures d'essai","HS"],
+     ["Vérifier l'allumage et l'orientation des spots","MS"],
+     ["Contrôler que les issues de secours sont dégagées","HS"],
+     ["Recharger le diffuseur de fragrance","MS"],
+     ["Contrôler les dates de péremption des boissons offertes","HS"]
+   ]}
+  ],
+  indices:["Pour la check-list, posez-vous une question : est-ce que ce contrôle rend la visite plus agréable, ou est-ce qu'il protège quelqu'un ou respecte la loi ?","L'affichage des prix est une obligation légale. Les boissons touchent au goût, mais vérifier leur date protège la santé du client."],
+  corrige:"La vue passe par les spots sur chaque chaussure, l'ouïe par la playlist, l'odorat par l'odeur de bois et de caoutchouc, le toucher par le mur de semelles et le goût par les boissons du samedi. Dans la check-list, la playlist, l'invitation à l'essai, les spots et le diffuseur sont des contrôles MS. L'affichage des prix, la désinfection du banc, les issues de secours et les dates de péremption sont des contrôles HS."
+ },
+ {
+  titre:"Le podium Swiss Running", code:"5",
+  cadre:"L'opération « Swiss Running » démarre lundi. Vous montez le podium en vitrine en respectant les consignes de la marque.",
+  docs:DOC789,
+  blocs:[
+   {type:"select",titre:"Étape 1 · Couleurs dominantes de la décoration",items:[
+     ["Couleurs de la décoration (affiche, stickers, fanions)","Rouge et blanc",["Bleu et blanc","Rouge et blanc","Vert et jaune","Noir et or"]]
+   ]},
+   {type:"pick",titre:"Étape 2 · Sélectionnez les produits du podium",id:"prod",items:[
+     {k:"cm",ico:"👟",t:"Cloudmonster",c:"blanc",col:"#fff",cat:"chaussure"},
+     {k:"c6",ico:"👟",t:"Cloud 6",c:"rouge",col:"#d52b1e",cat:"chaussure"},
+     {k:"csm",ico:"👟",t:"Cloudsurfer Max",c:"noir",col:"#111",cat:"chaussure"},
+     {k:"cr",ico:"👟",t:"Cloudrunner",c:"bleu ciel",col:"#7fb8e8",cat:"chaussure"},
+     {k:"pt",ico:"👕",t:"Performance-T",c:"noir",col:"#111",cat:"vêtement"},
+     {k:"wj",ico:"🧥",t:"Weather Jacket",c:"orange",col:"#f28c28",cat:"vêtement"},
+     {k:"cap",ico:"🧢",t:"Casquette Lightweight",c:"noire",col:"#111",cat:"accessoire"},
+     {k:"sock",ico:"🧦",t:"Chaussettes Performance",c:"rose",col:"#E0679C",cat:"accessoire"},
+     {k:"bag",ico:"🎒",t:"Sac à dos Ultralight",c:"vert",col:"#3b8a4a",cat:"accessoire"}
+   ],good:["cm","csm","pt","cap"]},
+   {type:"pick",titre:"Étape 3 · Choisissez trois objets décoratifs",id:"deco",items:[
+     {k:"choc",ico:"🍫",t:"Tablette de chocolat suisse géante en carton"},
+     {k:"foot",ico:"⚽",t:"Ballon de football"},
+     {k:"fan",ico:"🚩",t:"Fanion rouge à croix blanche"},
+     {k:"noel",ico:"🎄",t:"Guirlande de Noël lumineuse"},
+     {k:"doss",ico:"🏃",t:"Dossard de course marqué « Zurich »"},
+     {k:"ita",ico:"🇮🇹",t:"Drapeau italien"}
+   ],good:["choc","fan","doss"]}
+  ],
+  indices:["Relisez le document 9 : il fixe le nombre de produits par catégorie et les coloris autorisés. Toute couleur vive est éliminée.","Pour la déco, chaque objet doit évoquer la Suisse ou la course à pied. Un objet hors saison ou d'un autre pays brouille le message."],
+  corrige:"La décoration reprend le rouge et le blanc du drapeau suisse. Le podium présente quatre références aux coloris neutres : la Cloudmonster blanche et la Cloudsurfer Max noire (deux chaussures), le Performance-T noir (un vêtement) et la casquette Lightweight noire (un accessoire). Le chocolat géant, le fanion à croix blanche et le dossard « Zurich » évoquent la Suisse et la course sans surcharger la vitrine."
+ },
+ {
+  titre:"PLV ou ILV ?", code:"8",
+  cadre:"Le carton de la marque est arrivé, mélangé avec la signalétique du magasin. Triez chaque support, puis révisez le vocabulaire avec Marc.",
+  docs:DOC10,
+  blocs:[
+   {type:"select",titre:"Support → PLV ou ILV",options:["PLV","ILV"],items:[
+     ["Affiche « Swiss Running » envoyée par On pour la durée de l'opération","PLV"],
+     ["Panneau de rayon « Chaussures femme » fixé au mur","ILV"],
+     ["Stop-rayon promotionnel sur la Cloudmonster","PLV"],
+     ["Plan du magasin à l'entrée","ILV"],
+     ["Présentoir de comptoir en carton fourni par la marque","PLV"],
+     ["Pictogramme permanent « Zone d'essai »","ILV"],
+     ["Vitrophanie « Grüezi ! » collée sur la vitrine le temps de l'OP","PLV"],
+     ["Étiquette de prix sur l'étagère","ILV"]
+   ]},
+   {type:"select",titre:"Vocabulaire professionnel · terme → définition",options:["Élément du point de vente qui crée l'atmosphère","Technique qui sollicite un ou plusieurs sens du client","Publicité ponctuelle, souvent fournie par le fabricant","Information permanente, installée par le distributeur","Mise en scène de l'offre avec décor, mobilier et accessoires","Plateforme en vitrine pour mettre les produits en valeur"],items:[
+     ["Facteur d'ambiance","Élément du point de vente qui crée l'atmosphère"],
+     ["Marketing sensoriel","Technique qui sollicite un ou plusieurs sens du client"],
+     ["PLV","Publicité ponctuelle, souvent fournie par le fabricant"],
+     ["ILV","Information permanente, installée par le distributeur"],
+     ["Théâtralisation","Mise en scène de l'offre avec décor, mobilier et accessoires"],
+     ["Podium","Plateforme en vitrine pour mettre les produits en valeur"]
+   ]}
+  ],
+  indices:["Deux questions à se poser : qui fournit le support (la marque ou le magasin) ? Et combien de temps reste-t-il (le temps d'une opération ou tout le temps) ?","Quatre supports sont de la PLV, quatre sont de l'ILV."],
+  corrige:"L'affiche, le stop-rayon, le présentoir carton et la vitrophanie sont de la PLV : ils font la promotion de l'opération, sont souvent fournis par la marque et ne restent que le temps de l'OP. Le panneau de rayon, le plan du magasin, le pictogramme « Zone d'essai » et l'étiquette de prix sont de l'ILV : installés en permanence par le magasin, ils informent et orientent."
+ },
+ {
+  titre:"Le bilan de l'opération", code:"3",
+  cadre:"La semaine « Swiss Running » est terminée. Marc veut savoir si l'animation a marché. Calculez les indicateurs et arrondissez au dixième si besoin.",
+  docs:DOC11,
+  blocs:[{type:"numeric",titre:"Indicateurs à calculer",items:[
+    ["Taux de transformation, semaine avant l'OP",12,0.1,"%"],
+    ["Taux de transformation, semaine de l'OP",14.5,0.1,"%"],
+    ["Panier moyen, semaine avant l'OP",110,0.5,"€"],
+    ["Panier moyen, semaine de l'OP",123,0.5,"€"],
+    ["Taux d'évolution du chiffre d'affaires",59.5,0.1,"%"]
+  ]}],
+  indices:["Le taux de transformation compare les clients qui achètent (tickets) aux visiteurs (entrées). Le panier moyen répartit le chiffre d'affaires entre les tickets.","Taux de transformation = tickets ÷ entrées × 100. Panier moyen = CA ÷ tickets. Taux d'évolution = (valeur finale − valeur initiale) ÷ valeur initiale × 100."],
+  corrige:"Avant l'OP, le taux de transformation est de 150 ÷ 1 250 × 100 = 12 % et le panier moyen de 16 500 ÷ 150 = 110 €. Pendant l'OP, il passe à 214 ÷ 1 480 × 100 ≈ 14,5 % et le panier moyen à 26 322 ÷ 214 = 123 €. Le chiffre d'affaires évolue de (26 322 − 16 500) ÷ 16 500 × 100 ≈ + 59,5 %. L'animation a donc fonctionné : plus de visiteurs, plus d'acheteurs parmi eux et des paniers plus gros."
+ }
+];
+const CODE_FINAL = MISSIONS.map(m=>m.code).join("");
+
+/* ============================================================
+   ÉTAT
+   ============================================================ */
+let S = {equipe:"",debut:null,fin:null,done:[],indices:{},erreurs:{},brouillons:{},ecran:"accueil",courante:0};
+function save(){try{localStorage.setItem("escapeOnSwiss",JSON.stringify(S))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem("escapeOnSwiss"));if(d)S=Object.assign(S,d)}catch(e){}}
+load();
+
+const $=s=>document.querySelector(s);
+const app=$("#app");
+const norm=s=>String(s).trim().replace(/\s/g,"").replace(",",".");
+
+/* chrono */
+function fmt(ms){const t=Math.max(0,Math.floor(ms/1000));const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+":":"")+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
+setInterval(()=>{if(S.debut){$("#chrono").textContent=fmt((S.fin||Date.now())-S.debut)}},500);
+function majHaut(){
+  $("#lblEquipe").textContent=S.equipe?("Équipe : "+S.equipe):"";
+  $("#progBar").style.width=(S.done.length/MISSIONS.length*100)+"%";
+}
+
+/* ============================================================
+   ÉCRANS
+   ============================================================ */
+function accueil(){
+  S.ecran="accueil";save();majHaut();
+  app.innerHTML=`
+  <section class="hero"><div class="bg"></div><div class="inner">
+    <div class="kick">AGEC · Terminale Bac Pro MCV · Mettre en scène l'offre</div>
+    <h1>Opération<br><span>Swiss Running</span></h1>
+    <p>Vous êtes en PFMP chez <b>Run Green Strasbourg</b>, 29 rue du Faubourg de Pierre. Lundi, le corner On lance l'opération « Swiss Running ». Problème : Marc Schneider, votre tuteur, a rangé le kit vitrine dans un coffre à code avant de partir en formation. Il vous a laissé huit missions. Chaque mission réussie vous donne un chiffre du code.</p>
+    <div class="form"><input id="inEquipe" placeholder="Nom de l'équipe ou prénoms" value="${esc(S.equipe)}"><button class="btn" id="go">${S.debut?"Reprendre la partie":"Commencer"}</button></div>
+  </div></section>
+  <div class="regles">
+    <div class="regle"><b>8 missions</b>Elles se débloquent dans l'ordre. Lisez bien les documents avant de répondre.</div>
+    <div class="regle"><b>Indices</b>Deux indices par mission. Chacun ajoute 2 minutes au chrono.</div>
+    <div class="regle"><b>Erreurs</b>Une validation fausse ajoute 30 secondes. Les cases fausses passent en rouge.</div>
+    <div class="regle"><b>Brouillon</b>Chaque mission a un brouillon pour vos calculs et vos notes.</div>
+  </div>
+  <div class="footer-prof">${S.debut?'<button class="btn ghost" id="btnReset">Nouvelle partie</button>':''}</div>`;
+  $("#go").onclick=()=>{const v=$("#inEquipe").value.trim();if(!v){$("#inEquipe").focus();$("#inEquipe").style.outline="3px solid #d52b1e";return}S.equipe=v;if(!S.debut)S.debut=Date.now();save();carte()};
+  if($("#btnReset"))$("#btnReset").onclick=()=>{if(confirm("Effacer la partie en cours ?")){S={equipe:"",debut:null,fin:null,done:[],indices:{},erreurs:{},brouillons:{},ecran:"accueil",courante:0};save();$("#chrono").textContent="00:00";accueil()}};
+}
+
+function carte(){
+  S.ecran="carte";save();majHaut();
+  const prochaine=S.done.length;
+  let h=`<div class="mhead"><h2>Les missions de Marc</h2></div><div class="carte">`;
+  MISSIONS.forEach((m,i)=>{
+    const done=S.done.includes(i),open=i<=prochaine;
+    h+=`<button class="mcard ${done?"done":open?"open":"lock"}" data-i="${i}" ${open?"":"disabled"}>
+      <span class="etat">${done?"✅":open?"🔓":"🔒"}</span>
+      <div class="n">MISSION ${i+1}</div><h3>${m.titre}</h3>
+      ${done?`<span class="chiffre">${m.code}</span>`:""}</button>`;
+  });
+  h+=`</div><div class="cadenas"><div style="font-size:30px">🔐</div><div><b>Le coffre du kit vitrine</b><br><span style="opacity:.75;font-size:14px">${S.done.length===8?"Tous les chiffres sont trouvés. À vous d'ouvrir le coffre.":"Chiffres trouvés : "+S.done.length+" sur 8"}</span></div>
+  <div class="digits">${MISSIONS.map((m,i)=>`<span class="${S.done.includes(i)?"ok":""}">${S.done.includes(i)?m.code:"?"}</span>`).join("")}</div>
+  ${S.done.length===8?'<button class="btn" id="ouvrir">Ouvrir le coffre</button>':''}</div>`;
+  app.innerHTML=h;
+  app.querySelectorAll(".mcard:not(.lock)").forEach(b=>b.onclick=()=>mission(+b.dataset.i));
+  if($("#ouvrir"))$("#ouvrir").onclick=coffre;
+  window.scrollTo(0,0);
+}
+
+function mission(i){
+  S.ecran="mission";S.courante=i;save();
+  const m=MISSIONS[i],done=S.done.includes(i),nInd=S.indices[i]||0;
+  let h=`<button class="btn sec" id="retour">← Missions</button>
+  <div class="mhead" style="margin-top:14px"><span class="badge">MISSION ${i+1}</span><h2>${m.titre}</h2></div>
+  <div class="cadre">▷ ${m.cadre}</div>${m.docs}`;
+  m.blocs.forEach((b,bi)=>{
+    h+=`<div class="qbloc"><h4>Question ${bi+1} · ${b.titre}</h4>`;
+    if(b.type==="select"){
+      b.items.forEach((it,ii)=>{
+        const opts=it[2]||b.options;
+        h+=`<div class="row" id="r${bi}_${ii}"><div class="lab">${it[0]}</div><select data-b="${bi}" data-i="${ii}"><option value="">Choisir…</option>${melange(opts,i*31+bi*7+ii).map(o=>`<option>${esc(o)}</option>`).join("")}</select></div>`;
+      });
+    } else if(b.type==="numeric"){
+      b.items.forEach((it,ii)=>{
+        h+=`<div class="row" id="r${bi}_${ii}"><div class="lab">${it[0]}</div><div class="unit"><input class="num" inputmode="decimal" data-b="${bi}" data-i="${ii}" placeholder="…">${it[3]?`<span>${it[3]}</span>`:""}</div></div>`;
+      });
+    } else if(b.type==="pick"){
+      h+=`<div class="picks" id="pk${bi}">`+b.items.map(p=>`<button class="pick" data-b="${bi}" data-k="${p.k}"><span class="ico">${p.ico}</span><b>${p.t}</b>${p.c?`<br><span class="sw" style="background:${p.col}"></span>${p.c} · ${p.cat}`:""}</button>`).join("")+`</div>`;
+    }
+    h+=`</div>`;
+  });
+  h+=`<div id="zoneMsg"></div><div id="zoneInd">${m.indices.slice(0,nInd).map((t,k)=>`<div class="indice"><b>Indice ${k+1} :</b> ${t}</div>`).join("")}</div>`;
+  if(!done){
+    h+=`<div class="actions"><button class="btn" id="valider">Valider la mission</button><button class="btn sec" id="indice" ${nInd>=2?"disabled":""}>💡 Indice (${2-nInd} restant${2-nInd>1?"s":""}, +2 min)</button></div>`;
+  }
+  h+=`<details class="brouil" ${S.brouillons[i]?"open":""}><summary>✏️ Brouillon de la mission</summary><textarea class="brouillon" id="brouillon" placeholder="Vos calculs, vos notes…">${esc(S.brouillons[i]||"")}</textarea></details><div id="zoneDebrief"></div>`;
+  app.innerHTML=h;
+  window.scrollTo(0,0);
+  $("#retour").onclick=carte;
+  $("#brouillon").oninput=e=>{S.brouillons[i]=e.target.value;save()};
+  app.querySelectorAll(".pick").forEach(p=>p.onclick=()=>{if(!S.done.includes(i))p.classList.toggle("on")});
+  if(done){remplirCorrect(i);debrief(i,false);return}
+  $("#indice").onclick=()=>{
+    const n=(S.indices[i]||0);if(n>=2)return;S.indices[i]=n+1;S.debut-=120000;save();
+    $("#zoneInd").innerHTML=m.indices.slice(0,n+1).map((t,k)=>`<div class="indice"><b>Indice ${k+1} :</b> ${t}</div>`).join("");
+    const b=$("#indice");const r=2-(n+1);b.textContent=`💡 Indice (${r} restant${r>1?"s":""}, +2 min)`;if(r<=0)b.disabled=true;
+  };
+  $("#valider").onclick=()=>verifier(i);
+}
+
+function verifier(i){
+  const m=MISSIONS[i];let total=0,bons=0,pickErr=[];
+  m.blocs.forEach((b,bi)=>{
+    if(b.type==="select"){
+      b.items.forEach((it,ii)=>{total++;const el=app.querySelector(`select[data-b="${bi}"][data-i="${ii}"]`);const row=$("#r"+bi+"_"+ii);const ok=el.value===it[1];row.classList.toggle("good",ok);row.classList.toggle("bad",!ok);if(ok)bons++});
+    } else if(b.type==="numeric"){
+      b.items.forEach((it,ii)=>{total++;const el=app.querySelector(`input[data-b="${bi}"][data-i="${ii}"]`);const v=parseFloat(norm(el.value));const ok=!isNaN(v)&&Math.abs(v-it[1])<=it[2]+1e-9;const row=$("#r"+bi+"_"+ii);row.classList.toggle("good",ok);row.classList.toggle("bad",!ok);if(ok)bons++});
+    } else if(b.type==="pick"){
+      total++;const sel=[...app.querySelectorAll(`#pk${bi} .pick.on`)].map(p=>p.dataset.k).sort();const ok=JSON.stringify(sel)===JSON.stringify([...b.good].sort());
+      if(ok)bons++;else pickErr.push(b.titre.split("·")[0].trim()+(sel.length!==b.good.length?` : il faut ${b.good.length} éléments, vous en avez ${sel.length}`:" : la sélection ne respecte pas les consignes"));
+    }
+  });
+  if(bons===total){
+    S.done.push(i);S.done=[...new Set(S.done)];save();majHaut();
+    $("#zoneMsg").innerHTML=`<div class="msg ok">Mission réussie !</div>`;
+    const a=app.querySelector(".actions");if(a)a.remove();
+    debrief(i,true);
+  } else {
+    S.erreurs[i]=(S.erreurs[i]||0)+1;S.debut-=30000;save();
+    $("#zoneMsg").innerHTML=`<div class="msg ko">Pas encore : ${bons} bonne${bons>1?"s":""} réponse${bons>1?"s":""} sur ${total}. Les cases en rouge sont à revoir (+30 s).${pickErr.length?"<br>"+pickErr.join("<br>"):""}</div>`;
+    $("#zoneMsg").scrollIntoView({behavior:"smooth",block:"center"});
+  }
+}
+
+function remplirCorrect(i){
+  MISSIONS[i].blocs.forEach((b,bi)=>{
+    if(b.type==="select")b.items.forEach((it,ii)=>{const el=app.querySelector(`select[data-b="${bi}"][data-i="${ii}"]`);el.value=it[1];el.disabled=true;$("#r"+bi+"_"+ii).classList.add("good")});
+    if(b.type==="numeric")b.items.forEach((it,ii)=>{const el=app.querySelector(`input[data-b="${bi}"][data-i="${ii}"]`);el.value=String(it[1]).replace(".",",");el.disabled=true;$("#r"+bi+"_"+ii).classList.add("good")});
+    if(b.type==="pick")app.querySelectorAll(`#pk${bi} .pick`).forEach(p=>p.classList.toggle("on",b.good.includes(p.dataset.k)));
+  });
+}
+
+function debrief(i,neuf){
+  const m=MISSIONS[i];
+  $("#zoneDebrief").innerHTML=`<div class="debrief"><h3>Le corrigé de Marc</h3><p>${m.corrige}</p>
+  <p style="text-align:center;margin-top:14px">Chiffre n° ${i+1} du coffre :</p><div class="code">${m.code}</div>
+  <div class="actions" style="justify-content:center"><button class="btn" id="suite">${S.done.length===8?"Aller au coffre":"Mission suivante →"}</button></div></div>`;
+  $("#suite").onclick=()=>{if(S.done.length===8)carte();else{const n=MISSIONS.findIndex((_,k)=>!S.done.includes(k));mission(n)}};
+  if(neuf){$("#zoneDebrief").scrollIntoView({behavior:"smooth"});confetti(60)}
+}
+
+function coffre(){
+  S.ecran="coffre";save();
+  app.innerHTML=`<button class="btn sec" id="retour">← Missions</button>
+  <div class="fin" style="margin-top:14px"><div style="font-size:60px">🔐</div><h1>Le coffre du kit vitrine</h1>
+  <p>Entrez les 8 chiffres dans l'ordre des missions.</p>
+  <div class="form" style="justify-content:center"><input id="inCode" inputmode="numeric" maxlength="8" style="max-width:260px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:26px;letter-spacing:6px" placeholder="••••••••"><button class="btn" id="ok">Ouvrir</button></div><div id="m"></div></div>`;
+  $("#retour").onclick=carte;
+  $("#ok").onclick=()=>{if($("#inCode").value.trim()===CODE_FINAL){if(!S.fin)S.fin=Date.now();save();victoire()}else{$("#m").innerHTML='<div class="msg ko" style="margin-top:12px">Le coffre reste fermé. Vérifiez l\'ordre des chiffres.</div>'}};
+}
+
+function victoire(){
+  S.ecran="fin";save();majHaut();
+  const duree=S.fin-S.debut,min=duree/60000;
+  const ind=Object.values(S.indices).reduce((a,b)=>a+b,0),err=Object.values(S.erreurs).reduce((a,b)=>a+b,0);
+  const et=min<=90?3:min<=130?2:1;
+  app.innerHTML=`<div class="fin"><div style="font-size:60px">🏔️</div><h1>Coffre ouvert !</h1>
+  <p>Le kit vitrine est entre vos mains. Lundi, la vitrine « Swiss Running » sera prête. Bravo ${esc(S.equipe)}.</p>
+  <div class="etoiles">${"★".repeat(et)}<span style="opacity:.25">${"★".repeat(3-et)}</span></div>
+  <div class="stats"><div>Temps final<b>${fmt(duree)}</b></div><div>Indices<b>${ind}</b></div><div>Erreurs<b>${err}</b></div></div>
+  <p style="opacity:.75;font-size:14px">Faites une capture de cet écran et montrez-la à votre professeur.</p>
+  <div class="actions" style="justify-content:center"><button class="btn sec" id="revoir">Revoir les missions</button></div></div>`;
+  $("#revoir").onclick=carte;
+  confetti(200);
+}
+
+function prof(){
+  let h=`<button class="btn sec" id="retour">← Accueil</button><div class="prof" style="margin-top:14px"><h2>Corrigé professeur</h2>
+  <p><b>Code final du coffre : <span style="font-family:'JetBrains Mono',monospace;font-size:22px">${CODE_FINAL}</span></b></p>
+  <p>Durée conseillée : 1 h 30 à 2 h. Étoiles : 3 en moins de 1 h 30, 2 jusqu'à 2 h 10, 1 au-delà (indices et erreurs compris). Chaque indice ajoute 2 min, chaque erreur 30 s.</p>`;
+  MISSIONS.forEach((m,i)=>{
+    h+=`<h3>Mission ${i+1} · ${m.titre} (chiffre ${m.code})</h3>`;
+    m.blocs.forEach(b=>{
+      if(b.type==="pick"){h+=`<p><b>${b.titre} :</b> ${b.items.filter(x=>b.good.includes(x.k)).map(x=>x.t+(x.c?" ("+x.c+")":"")).join(", ")}</p>`}
+      else{h+=`<table><tr><th>${b.titre}</th><th>Réponse</th></tr>${b.items.map(it=>`<tr><td>${it[0]}</td><td>${typeof it[1]==="number"?String(it[1]).replace(".",",")+" "+(it[3]||""):it[1]}</td></tr>`).join("")}</table>`}
+    });
+    h+=`<p style="margin-top:8px">${m.corrige}</p>`;
+  });
+  h+=`</div>`;
+  app.innerHTML=h;$("#retour").remove();window.scrollTo(0,0);
+}
+
+/* utilitaires */
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function melange(arr,seed){const a=[...arr];let s=seed+1;for(let i=a.length-1;i>0;i--){s=(s*9301+49297)%233280;const j=Math.floor(s/233280*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function confetti(n){
+  const c=$("#confetti"),x=c.getContext("2d");c.width=innerWidth;c.height=innerHeight;
+  const cols=["#d52b1e","#ffffff","#111111","#3A86D4","#E0679C"];
+  const P=Array.from({length:n},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,vx:(Math.random()-.5)*4,vy:2+Math.random()*4,r:4+Math.random()*6,c:cols[Math.floor(Math.random()*cols.length)],a:Math.random()*6}));
+  let t=0;(function f(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.a+=.1;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.strokeStyle="#ccc";x.fillRect(-p.r/2,-p.r/2,p.r,p.r*.6);x.restore()});if(++t<200)requestAnimationFrame(f);else x.clearRect(0,0,c.width,c.height)})();
+}
+
+/* démarrage */
+majHaut();
+if(window.MODE_PROF){document.title='Corrigé prof · Swiss Running';$('#chrono').remove();prof();}else
+if(S.ecran==="fin"&&S.fin)victoire();
+else if(S.debut&&S.equipe&&S.ecran==="mission")mission(S.courante);
+else if(S.debut&&S.equipe&&S.ecran!=="accueil")carte();
+else accueil();
+</script>
+</body>
+</html>
