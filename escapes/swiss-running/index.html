@@ -548,7 +548,8 @@ function victoire(){
 function prof(){
   let h0=`<div class="prof" style="margin-bottom:18px"><h2>Suivi en direct</h2>
   <p style="margin:0 0 10px;color:#6b6b6b;font-size:14px" id="suiviInfo">Chargement…</p>
-  <div style="overflow-x:auto"><table id="suiviTab"><thead><tr><th>Équipe</th><th>Progression</th><th>En cours</th><th>Temps</th><th>Indices</th><th>Erreurs</th><th>Statut</th></tr></thead><tbody></tbody></table></div>
+  <div style="overflow-x:auto"><table id="suiviTab"><thead><tr><th>Équipe</th><th>Progression</th><th>En cours</th><th>Temps</th><th>Indices</th><th>Erreurs</th><th>Note /20</th><th>Statut</th></tr></thead><tbody></tbody></table></div>
+  <p style="font-size:13px;color:#6b6b6b;margin:8px 0 0">Note proposée : 2 points par mission réussie (16 points), plus 4 points d'autonomie dont on retire 0,5 par indice et 0,25 par erreur. Tant que l'équipe joue, la note est provisoire (en gris).</p>
   <div class="actions"><button class="btn sec" id="suiviMaj">Actualiser</button><button class="btn ghost" id="suiviReset">Vider la séance</button></div></div>`;
   let h=h0+`<button class="btn sec" id="retour">← Accueil</button><div class="prof" style="margin-top:14px"><h2>Corrigé professeur</h2>
   <p><b>Code final du coffre : <span style="font-family:'JetBrains Mono',monospace;font-size:22px">${CODE_FINAL}</span></b></p>
@@ -569,6 +570,11 @@ function prof(){
     armee=0;fetch(DB+"/"+JEU_ID+".json",{method:"DELETE"}).then(()=>{b.textContent="Vider la séance";suivi()}).catch(()=>{b.textContent="Échec de l'effacement"})};
   suivi();setInterval(suivi,10000);
 }
+function noteSur20(e){
+  const base=2*(+e.missions||0);
+  const auto=Math.max(0,4-0.5*(+e.indices||0)-0.25*(+e.erreurs||0));
+  return Math.floor((base+auto)*2+1e-9)/2;
+}
 function suivi(){
   fetch(DB+"/"+JEU_ID+".json").then(r=>r.json()).then(o=>{
     if(o&&o.error)throw new Error(o.error);
@@ -580,7 +586,9 @@ function suivi(){
       const inactif=(now-(+e.maj||0))/60000;
       const st=e.statut==="terminé"?'<b style="color:#1f9d55">✅ Terminé</b>':inactif>3?`<span style="color:#d52b1e">⏸ inactif ${Math.round(inactif)} min</span>`:'🟢 en jeu';
       const pc=Math.round(e.missions/8*100);
-      return `<tr><td><b>${esc(e.equipe)}</b></td><td><div style="background:#eee;border-radius:6px;height:10px;width:120px;display:inline-block;vertical-align:middle;overflow:hidden"><i style="display:block;height:100%;width:${pc}%;background:${e.statut==="terminé"?"#1f9d55":"#d52b1e"}"></i></div> ${e.missions}/8</td><td>${esc(e.courante)}</td><td style="font-family:'JetBrains Mono',monospace">${fmt(e.temps_s*1000)}</td><td>${e.indices}</td><td>${e.erreurs}</td><td>${st}</td></tr>`}).join("")||'<tr><td colspan="7">Aucune équipe pour l\'instant.</td></tr>';
+      const note=noteSur20(e),fin=e.statut==="terminé";
+      const coul=!fin?"#9a9a9a":note>=16?"#1f9d55":note>=10?"#111":"#d52b1e";
+      return `<tr><td><b>${esc(e.equipe)}</b></td><td><div style="background:#eee;border-radius:6px;height:10px;width:120px;display:inline-block;vertical-align:middle;overflow:hidden"><i style="display:block;height:100%;width:${pc}%;background:${e.statut==="terminé"?"#1f9d55":"#d52b1e"}"></i></div> ${e.missions}/8</td><td>${esc(e.courante)}</td><td style="font-family:'JetBrains Mono',monospace">${fmt(e.temps_s*1000)}</td><td>${e.indices}</td><td>${e.erreurs}</td><td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${coul}">${String(note).replace(".",",")}${fin?"":" *"}</td><td>${st}</td></tr>`}).join("")||'<tr><td colspan="8">Aucune équipe pour l\'instant.</td></tr>';
   }).catch(err=>{$("#suiviInfo").innerHTML=/denied/i.test(err.message)?"<b style='color:#d52b1e'>La base Firebase refuse l'accès (règles expirées ou limitées). Voir la note d'installation.</b>":"Lecture impossible, nouvel essai dans 10 s…"});
 
 }
