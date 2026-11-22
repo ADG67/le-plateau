@@ -101,6 +101,12 @@ h2{font-size:clamp(22px,4.2vw,28px)}
 .recap .ans{color:var(--muted);font-size:14px}
 .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .foot{font-size:12.5px;color:var(--muted);text-align:center}
+.suivi{width:100%;border-collapse:collapse;font-size:15px}
+.suivi th,.suivi td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.suivi th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.bar{display:inline-block;vertical-align:middle;width:110px;height:9px;border-radius:9px;background:var(--line);overflow:hidden;margin-right:6px}
+.bar i{display:block;height:100%;background:var(--navy)}
+.qrow{display:grid;grid-template-columns:1fr 130px 48px;gap:10px;align-items:center;padding:8px 12px;border-radius:10px;background:var(--bg);font-size:14px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -124,8 +130,8 @@ h2{font-size:clamp(22px,4.2vw,28px)}
       <span class="chip"><svg aria-hidden="true"><use href="#i-clock"/></svg>10 minutes environ</span>
     </div>
     <form class="start" id="startForm">
-      <label for="who">Votre prénom (facultatif)</label>
-      <input id="who" name="who" type="text" autocomplete="given-name" maxlength="30" placeholder="Ex. : Léa">
+      <label for="who">Votre prénom et nom</label>
+      <input id="who" name="who" type="text" autocomplete="given-name" maxlength="40" placeholder="Ex. : Léa Martin" required>
       <div><button class="btn" type="submit">Ouvrir le dossier <svg aria-hidden="true"><use href="#i-arrow"/></svg></button></div>
     </form>
   </section>
@@ -154,6 +160,15 @@ h2{font-size:clamp(22px,4.2vw,28px)}
       <button class="btn" id="again"><svg aria-hidden="true"><use href="#i-redo"/></svg>Rejouer</button>
       <button class="btn ghost" id="errorsOnly">Revoir mes erreurs</button>
     </div>
+  </section>
+
+  <section class="cover" id="prof" hidden>
+    <div class="case"><span class="label">Espace professeur</span><span class="no">Suivi en direct</span></div>
+    <p id="suiviInfo">Chargement…</p>
+    <div style="overflow-x:auto"><table class="suivi" id="suiviTab"><thead><tr><th>Élève</th><th>Progression</th><th>Score</th><th>Note /20</th><th>Temps</th><th>Statut</th></tr></thead><tbody></tbody></table></div>
+    <h2 style="font-size:24px;margin-top:8px">Réussite par question</h2>
+    <div id="parQ" class="recap"></div>
+    <div class="btns" style="justify-content:flex-start"><button class="btn" id="suiviMaj">Actualiser</button><button class="btn ghost" id="suiviReset">Vider la séance</button></div>
   </section>
 
   <p class="foot">Sources : TJ Paris, 3e ch., 18 févr. 2026, n° 22/08878 ; Novagraaf (avril 2026) ; INPI. Décision de première instance, susceptible d'appel.</p>
@@ -188,13 +203,24 @@ const Q = [
 ];
 const $ = id => document.getElementById(id);
 let order = [], i = 0, score = 0, answers = [], who = "";
+/* Suivi en direct (même base Firebase que Swiss Running) */
+const DB = "https://escape-game-rivetoile-default-rtdb.europe-west1.firebasedatabase.app", JEU_ID = "quiz-affaire-feed";
+let SID = "", principal = false, debut = 0;
+function envoyer(fini){
+  if(!principal || !who || window.MODE_PROF) return;
+  const rep = Q.map((_,k)=>{const a = answers.find(x=>x.idx===k); return a ? (a.good?"1":"0") : "-"}).join("");
+  const corps = {nom:who, repondu:answers.length, score, total:Q.length, rep, statut:fini?"terminé":"en cours", temps_s:Math.round((Date.now()-debut)/1000), maj:Date.now()};
+  try{ fetch(DB+"/"+JEU_ID+"/"+SID+".json", {method:"PUT", body:JSON.stringify(corps)}).catch(()=>{}) }catch(e){}
+}
 const ic = (id, cls) => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
 function start(list){
+  principal = list.length === Q.length;
+  if(principal){ SID = Date.now().toString(36)+Math.random().toString(36).slice(2,7); debut = Date.now(); }
   order = list; i = 0; score = 0; answers = [];
   $("cover").hidden = true; $("result").hidden = true; $("quiz").hidden = false;
   $("track").setAttribute("aria-valuemax", order.length);
-  show();
+  show(); envoyer();
 }
 function show(){
   const q = Q[order[i]];
@@ -223,12 +249,14 @@ function pick(k){
   });
   $("fb").innerHTML = `<div class="verdict ${good?"ok":"ko"}"><div class="v"><svg aria-hidden="true"><use href="#${good?"i-check":"i-x"}"/></svg>${good?"Argument retenu":"Argument rejeté"}</div><p>${q.e}</p></div>`;
   $("pScore").textContent = `Score : ${score}`;
+  envoyer();
   $("next").innerHTML = (i === order.length-1 ? "Voir le délibéré" : "Pièce suivante") + ` <svg aria-hidden="true"><use href="#i-arrow"/></svg>`;
   $("next").hidden = false; $("next").focus();
 }
 function next(){ i++; i < order.length ? show() : end(); }
 function end(){
   $("quiz").hidden = true; $("result").hidden = false;
+  envoyer(true); principal = false;
   const n = order.length, r = score/n;
   $("rScore").textContent = score;
   document.querySelector(".seal span").textContent = "sur " + n;
@@ -257,4 +285,39 @@ document.addEventListener("keydown", e => {
   const btns = [...$("opts").querySelectorAll(".opt:not([disabled])")];
   if (k !== undefined && btns[k]) btns[k].click();
 });
+
+/* Espace professeur */
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = s => { s = Math.max(0, s|0); return Math.floor(s/60) + " min " + String(s%60).padStart(2,"0"); };
+function suivi(){
+  fetch(DB+"/"+JEU_ID+".json").then(r=>r.json()).then(o=>{
+    if(o && o.error) throw new Error(o.error);
+    const now = Date.now(), L = Object.values(o||{});
+    const vus = {}; L.sort((a,b)=>a.maj-b.maj).forEach(e=>{ vus[e.nom.toLowerCase()] = (vus[e.nom.toLowerCase()]||0)+1; e.essai = vus[e.nom.toLowerCase()]; });
+    L.sort((a,b)=>a.nom.localeCompare(b.nom,"fr") || a.essai-b.essai);
+    const fini = L.filter(e=>e.statut==="terminé").length;
+    $("suiviInfo").textContent = `${L.length} partie${L.length>1?"s":""} · ${fini} terminée${fini>1?"s":""} · mis à jour à ${new Date().toLocaleTimeString("fr-FR")}`;
+    $("suiviTab").querySelector("tbody").innerHTML = L.map(e=>{
+      const inactif = (now - (+e.maj||0))/60000, t = e.total||12;
+      const st = e.statut==="terminé" ? '<b style="color:var(--ok)">Terminé</b>' : inactif>3 ? `<span style="color:var(--ko)">Inactif ${Math.round(inactif)} min</span>` : "En jeu";
+      const note = Math.round(e.score/t*20*2)/2;
+      return `<tr><td><b>${esc(e.nom)}</b>${e.essai>1?` <span style="color:var(--muted)">(essai ${e.essai})</span>`:""}</td><td><span class="bar"><i style="width:${Math.round(e.repondu/t*100)}%"></i></span>${e.repondu}/${t}</td><td>${e.score}/${e.repondu}</td><td><b>${e.statut==="terminé"?String(note).replace(".",","):"…"}</b></td><td>${fmt(e.temps_s)}</td><td>${st}</td></tr>`;
+    }).join("") || '<tr><td colspan="6">Aucun élève pour l\'instant.</td></tr>';
+    $("parQ").innerHTML = Q.map((q,k)=>{
+      const R = L.map(e=>(e.rep||"")[k]).filter(x=>x==="0"||x==="1"), ok = R.filter(x=>x==="1").length;
+      const pc = R.length ? Math.round(ok/R.length*100) : null;
+      const c = pc===null ? "var(--muted)" : pc>=70 ? "var(--ok)" : pc>=40 ? "var(--gold)" : "var(--ko)";
+      return `<div class="qrow"><span><b>${k+1}.</b> ${esc(q.q)}</span><span class="bar" style="width:120px"><i style="width:${pc||0}%;background:${c}"></i></span><b style="color:${c}">${pc===null?"–":pc+" %"}</b></div>`;
+    }).join("");
+  }).catch(err=>{ $("suiviInfo").textContent = /denied/i.test(err.message) ? "La base Firebase refuse l'accès (règles expirées ou limitées)." : "Lecture impossible, nouvel essai dans 5 s…"; });
+}
+if(window.MODE_PROF){
+  document.title = "Suivi prof · Quiz Affaire Feed";
+  $("cover").hidden = true; $("prof").hidden = false;
+  $("suiviMaj").onclick = suivi;
+  let armee = 0;
+  $("suiviReset").onclick = e => { const b = e.target; if(Date.now()-armee > 5000){ armee = Date.now(); b.textContent = "Clique encore pour confirmer"; return; }
+    armee = 0; fetch(DB+"/"+JEU_ID+".json", {method:"DELETE"}).then(()=>{ b.textContent = "Vider la séance"; suivi(); }).catch(()=>{ b.textContent = "Échec de l'effacement"; }); };
+  suivi(); setInterval(suivi, 5000);
+}
 </script>
