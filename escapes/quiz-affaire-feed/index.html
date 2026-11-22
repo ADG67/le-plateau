@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta charset="utf-8">
+<title>Quiz Affaire Feed</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,700;1,500&family=Lato:wght@400;700;900&display=swap">
+<style>
+/* Layout : « dossier d'audience » — une chemise de procédure, chaque question est une pièce numérotée, le score final est le délibéré */
+:root{
+  --bg:#EEF2F8; --paper:#FFFFFF; --ink:#0F172A; --muted:#55607A; --line:#D6DEEB;
+  --navy:#1D3A8A; --navy-soft:#E6ECF8; --gold:#A86A0C; --gold-soft:#FBF1DE;
+  --ok:#15803D; --ok-soft:#E5F4EA; --ko:#B91C1C; --ko-soft:#FBE7E7;
+  --display:"EB Garamond",Georgia,"Times New Roman",serif;
+  --body:"Lato",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1220; --paper:#151C2E; --ink:#E8ECF5; --muted:#A3AEC6; --line:#2A3550;
+  --navy:#93AEF5; --navy-soft:#1E2A47; --gold:#E9B04F; --gold-soft:#2E2512;
+  --ok:#4ADE80; --ok-soft:#12301E; --ko:#F87171; --ko-soft:#3A1717; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1220; --paper:#151C2E; --ink:#E8ECF5; --muted:#A3AEC6; --line:#2A3550;
+  --navy:#93AEF5; --navy-soft:#1E2A47; --gold:#E9B04F; --gold-soft:#2E2512;
+  --ok:#4ADE80; --ok-soft:#12301E; --ko:#F87171; --ko-soft:#3A1717; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+.wrap{max-width:760px;margin:0 auto;padding-block:28px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;gap:20px}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.label{font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1,h2{font-family:var(--display);font-weight:700;margin:0;text-wrap:balance;line-height:1.1}
+
+/* Couverture du dossier */
+.cover{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:26px clamp(18px,4vw,34px);display:grid;gap:14px;position:relative;overflow:hidden}
+.cover::before{content:"";position:absolute;inset:0 0 auto 0;height:6px;background:var(--navy)}
+.case{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline}
+.case .no{font-family:var(--display);font-style:italic;font-size:18px;color:var(--gold)}
+h1{font-size:clamp(34px,7vw,52px)}
+h1 .vs{font-style:italic;font-weight:500;color:var(--muted);font-size:.7em}
+.cover p{margin:0;max-width:60ch;color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--navy-soft);color:var(--navy);font-size:14px;font-weight:700}
+.chip svg{width:16px;height:16px}
+.start{display:grid;gap:10px;max-width:420px}
+.start label{font-weight:700;font-size:15px}
+.start input{font:inherit;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);min-height:48px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:10px;border:0;background:var(--navy);color:var(--paper);font-weight:900;letter-spacing:.02em;transition:transform .15s var(--ease),filter .15s}
+.btn:hover{filter:brightness(1.08)} .btn:active{transform:scale(.97)}
+.btn svg{width:18px;height:18px}
+.btn.ghost{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* Barre de progression */
+.progress{display:grid;gap:8px}
+.progress .row{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.track{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.fill{height:100%;width:0;background:var(--navy);border-radius:99px;transition:width .3s var(--ease)}
+
+/* Pièce = question */
+.piece{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px clamp(18px,4vw,30px);display:grid;gap:16px}
+.piece .head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tag{font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:6px;background:var(--gold-soft);color:var(--gold)}
+h2{font-size:clamp(22px,4.2vw,28px)}
+.opts{display:grid;gap:10px}
+.opt{display:flex;align-items:flex-start;gap:12px;text-align:left;width:100%;min-height:52px;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);transition:border-color .15s,background .15s,transform .15s var(--ease)}
+.opt:hover:not([disabled]){border-color:var(--navy);background:var(--navy-soft)}
+.opt:active:not([disabled]){transform:scale(.99)}
+.opt .k{flex:none;width:28px;height:28px;border-radius:7px;display:grid;place-items:center;font-weight:900;font-size:14px;background:var(--navy-soft);color:var(--navy)}
+.opt .t{flex:1;min-width:0;padding-top:2px}
+.opt .ic{flex:none;width:22px;height:22px;margin-top:3px;display:none}
+.opt[disabled]{cursor:default}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)} .opt.right .k{background:var(--ok);color:var(--paper)} .opt.right .ic.y{display:block;color:var(--ok)}
+.opt.wrong{border-color:var(--ko);background:var(--ko-soft)} .opt.wrong .k{background:var(--ko);color:var(--paper)} .opt.wrong .ic.n{display:block;color:var(--ko)}
+.opt.dim{opacity:.55}
+
+.verdict{display:grid;gap:6px;padding:14px 16px;border-radius:10px;border-left:5px solid var(--ok);background:var(--ok-soft);animation:in .25s var(--ease)}
+.verdict.ko{border-left-color:var(--ko);background:var(--ko-soft)}
+.verdict .v{font-family:var(--display);font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px}
+.verdict.ok .v{color:var(--ok)} .verdict.ko .v{color:var(--ko)}
+.verdict .v svg{width:22px;height:22px}
+.verdict p{margin:0}
+.actions{display:flex;justify-content:flex-end}
+@keyframes in{from{opacity:.2;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Délibéré */
+.result{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:28px clamp(18px,4vw,34px);display:grid;gap:18px;text-align:center;justify-items:center}
+.seal{width:140px;height:140px;border-radius:50%;border:3px double var(--gold);display:grid;place-items:center;align-content:center;color:var(--gold);transform:rotate(-6deg)}
+.seal b{font-family:var(--display);font-size:46px;line-height:1;font-variant-numeric:tabular-nums}
+.seal span{font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+.result h2{font-size:clamp(26px,5vw,36px)}
+.result p{margin:0;max-width:52ch;color:var(--muted)}
+.recap{width:100%;display:grid;gap:8px;text-align:left}
+.recap li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:var(--bg);font-size:15px}
+.recap ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.recap svg{flex:none;width:20px;height:20px;margin-top:2px}
+.recap .y{color:var(--ok)} .recap .n{color:var(--ko)}
+.recap .ans{color:var(--muted);font-size:14px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.foot{font-size:12.5px;color:var(--muted);text-align:center}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.5l2.7 2.7L16 9.8"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7a3 3 0 006 0L5 7zM19 7l-3 7a3 3 0 006 0l-3-7z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></symbol>
+</svg>
+
+<main class="wrap" id="app">
+  <section class="cover" id="cover">
+    <div class="case"><span class="label">Dossier d'audience · BTS MCO · Bloc 2 ADOC</span><span class="no">Affaire n° 22/08878</span></div>
+    <h1>The Feed <span class="vs">contre</span> Feed.</h1>
+    <p>Le 18 février 2026, le tribunal judiciaire de Paris a annulé les marques de la start-up Feed., devenue O.K.R. Douze pièces, douze questions : à vous de rendre le verdict.</p>
+    <div class="meta">
+      <span class="chip"><svg aria-hidden="true"><use href="#i-scale"/></svg>12 questions</span>
+      <span class="chip"><svg aria-hidden="true"><use href="#i-clock"/></svg>10 minutes environ</span>
+    </div>
+    <form class="start" id="startForm">
+      <label for="who">Votre prénom (facultatif)</label>
+      <input id="who" name="who" type="text" autocomplete="given-name" maxlength="30" placeholder="Ex. : Léa">
+      <div><button class="btn" type="submit">Ouvrir le dossier <svg aria-hidden="true"><use href="#i-arrow"/></svg></button></div>
+    </form>
+  </section>
+
+  <div id="quiz" hidden>
+    <div class="progress" style="margin-bottom:16px">
+      <div class="row"><span id="pLabel">Pièce 1 sur 12</span><span id="pScore">Score : 0</span></div>
+      <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0" id="track"><div class="fill" id="fill"></div></div>
+    </div>
+    <section class="piece" aria-labelledby="qText">
+      <div class="head"><span class="label" id="qNum">Pièce n° 1</span><span class="tag" id="qTag">QCM</span></div>
+      <h2 id="qText"></h2>
+      <div class="opts" id="opts" role="group" aria-labelledby="qText"></div>
+      <div id="fb" aria-live="polite"></div>
+      <div class="actions"><button class="btn" id="next" hidden>Pièce suivante <svg aria-hidden="true"><use href="#i-arrow"/></svg></button></div>
+    </section>
+  </div>
+
+  <section class="result" id="result" hidden aria-live="polite">
+    <span class="label">Délibéré</span>
+    <div class="seal"><b id="rScore">0</b><span>sur 12</span></div>
+    <h2 id="rTitle"></h2>
+    <p id="rText"></p>
+    <div class="recap"><ul id="recap"></ul></div>
+    <div class="btns">
+      <button class="btn" id="again"><svg aria-hidden="true"><use href="#i-redo"/></svg>Rejouer</button>
+      <button class="btn ghost" id="errorsOnly">Revoir mes erreurs</button>
+    </div>
+  </section>
+
+  <p class="foot">Sources : TJ Paris, 3e ch., 18 févr. 2026, n° 22/08878 ; Novagraaf (avril 2026) ; INPI. Décision de première instance, susceptible d'appel.</p>
+</main>
+
+<script>
+const Q = [
+  {t:"QCM", q:"Quelle juridiction a annulé les marques Feed ?", o:["L'INPI","Le tribunal judiciaire de Paris","L'EUIPO (office européen des marques)","La Cour de cassation"], a:1,
+   e:"C'est une décision de justice du tribunal judiciaire de Paris, rendue le 18 février 2026. L'INPI n'a pas radié la marque."},
+  {t:"QCM", q:"Qui est titulaire de la marque antérieure « The Feed » ?", o:["Une start-up française concurrente","Anthony Bourbon lui-même","La société américaine The Feed.com","L'INPI"], a:2,
+   e:"The Feed.com, société américaine, a déposé la marque de l'Union européenne « The Feed » le 3 décembre 2013, trois ans avant la création de Feed."},
+  {t:"QCM", q:"Pourquoi le mot « The » ne suffit-il pas à distinguer les deux marques ?", o:["Il est en anglais","Il est peu distinctif : « Feed » est l'élément dominant","Il n'est pas protégeable en France","Feed. l'avait aussi déposé"], a:1,
+   e:"Le tribunal a jugé « The » peu distinctif. Le consommateur retient « Feed », commun aux deux signes."},
+  {t:"Vrai ou faux", q:"La notoriété de Feed. en France lui a permis de conserver sa marque.", o:["Vrai","Faux"], a:1,
+   e:"Faux. Le succès commercial et la notoriété n'ont pas suffi à écarter l'antériorité : le premier qui dépose a la priorité."},
+  {t:"QCM", q:"Quels éléments réunis créent le risque de confusion ?", o:["Même prix et même logo","Signes proches, produits similaires, même public","Même pays d'origine","Même dirigeant"], a:1,
+   e:"Le juge compare les signes, les produits et services (substituts de repas, boissons, compléments, vente en ligne) et le public visé."},
+  {t:"QCM", q:"Sur quel fondement les marques Feed ont-elles été perdues ?", o:["La déchéance pour non-usage","La nullité pour atteinte à une marque antérieure","La radiation automatique par l'INPI","La concurrence déloyale"], a:1,
+   e:"Il s'agit d'une nullité : les marques n'auraient jamais dû être enregistrées car elles portaient atteinte à « The Feed »."},
+  {t:"QCM", q:"Quel est l'effet d'une nullité de marque ?", o:["La marque disparaît dans 5 ans","Elle est rétroactive : la marque est réputée n'avoir jamais existé","Elle ne vaut que pour l'avenir","Elle suspend la marque pendant un an"], a:1,
+   e:"La nullité rétroagit à la date de dépôt. La déchéance, elle, ne prend effet qu'à la date de la demande ou du motif."},
+  {t:"QCM", q:"Au bout de combien d'années sans exploitation sérieuse une marque peut-elle être déchue ?", o:["3 ans","5 ans","10 ans","20 ans"], a:1,
+   e:"Cinq ans sans exploitation sérieuse. Une marque peut aussi être déchue si elle devient générique ou trompeuse. Ce n'était pas le cas de Feed."},
+  {t:"QCM", q:"Pourquoi l'affaire a-t-elle été jugée par le tribunal et non par l'INPI ?", o:["L'INPI ne traite jamais les nullités","La nullité était liée à une action en contrefaçon","The Feed.com est une société étrangère","Le montant dépassait 100 000 €"], a:1,
+   e:"L'INPI peut annuler une marque, mais il n'est pas compétent quand la nullité accompagne une action en contrefaçon."},
+  {t:"QCM", q:"Combien Feed. doit-elle verser en dommages-intérêts provisionnels ?", o:["10 000 €","169 416,41 €","179 416,41 €","1,4 M€"], a:2,
+   e:"179 416,41 € : 169 416,41 € de perte de chance de conclure une licence et 10 000 € de préjudice moral."},
+  {t:"Vrai ou faux", q:"Le tribunal a aussi condamné Feed. pour concurrence déloyale et parasitisme.", o:["Vrai","Faux"], a:1,
+   e:"Faux. Ces demandes ont été rejetées. Seule la contrefaçon de marque a été retenue."},
+  {t:"QCM", q:"Quelle précaution aurait pu éviter le litige avant le dépôt de la marque ?", o:["Créer un logo coloré","Réserver un compte Instagram","Faire une recherche d'antériorités (INPI, EUIPO, OMPI)","Lever des fonds rapidement"], a:2,
+   e:"La recherche d'antériorités vérifie qu'aucun signe proche n'est déjà protégé pour des produits similaires. Ensuite, une veille surveille les nouveaux dépôts."}
+];
+const $ = id => document.getElementById(id);
+let order = [], i = 0, score = 0, answers = [], who = "";
+const ic = (id, cls) => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
+
+function start(list){
+  order = list; i = 0; score = 0; answers = [];
+  $("cover").hidden = true; $("result").hidden = true; $("quiz").hidden = false;
+  $("track").setAttribute("aria-valuemax", order.length);
+  show();
+}
+function show(){
+  const q = Q[order[i]];
+  $("pLabel").textContent = `Pièce ${i+1} sur ${order.length}`;
+  $("pScore").textContent = `Score : ${score}`;
+  $("fill").style.width = (i/order.length*100) + "%";
+  $("track").setAttribute("aria-valuenow", i);
+  $("qNum").textContent = `Pièce n° ${order[i]+1}`;
+  $("qTag").textContent = q.t;
+  $("qText").textContent = q.q;
+  $("fb").innerHTML = ""; $("next").hidden = true;
+  const keys = q.o.length === 2 ? ["V","F"] : ["A","B","C","D"];
+  $("opts").innerHTML = q.o.map((o,k)=>`<button class="opt" data-k="${k}"><span class="k">${keys[k]}</span><span class="t">${o}</span>${ic("i-check","y")}${ic("i-x","n")}</button>`).join("");
+  $("opts").querySelectorAll(".opt").forEach(b => b.addEventListener("click", () => pick(+b.dataset.k)));
+  $("qText").setAttribute("tabindex","-1"); $("qText").focus({preventScroll:false});
+}
+function pick(k){
+  const q = Q[order[i]]; const good = k === q.a;
+  if (good) score++;
+  answers.push({idx:order[i], k, good});
+  $("opts").querySelectorAll(".opt").forEach((b,n)=>{
+    b.disabled = true;
+    if (n === q.a) b.classList.add("right");
+    else if (n === k) b.classList.add("wrong");
+    else b.classList.add("dim");
+  });
+  $("fb").innerHTML = `<div class="verdict ${good?"ok":"ko"}"><div class="v"><svg aria-hidden="true"><use href="#${good?"i-check":"i-x"}"/></svg>${good?"Argument retenu":"Argument rejeté"}</div><p>${q.e}</p></div>`;
+  $("pScore").textContent = `Score : ${score}`;
+  $("next").innerHTML = (i === order.length-1 ? "Voir le délibéré" : "Pièce suivante") + ` <svg aria-hidden="true"><use href="#i-arrow"/></svg>`;
+  $("next").hidden = false; $("next").focus();
+}
+function next(){ i++; i < order.length ? show() : end(); }
+function end(){
+  $("quiz").hidden = true; $("result").hidden = false;
+  const n = order.length, r = score/n;
+  $("rScore").textContent = score;
+  document.querySelector(".seal span").textContent = "sur " + n;
+  const name = who ? who + ", " : "";
+  const [title, text] = r === 1 ? ["Verdict : relaxe totale", "Vous maîtrisez parfaitement l'affaire Feed et le droit des marques."]
+    : r >= .75 ? ["Verdict : dossier solide", "Très bonne maîtrise. Relisez les explications des questions manquées."]
+    : r >= .5 ? ["Verdict : à compléter", "Les bases sont là. Revoyez la différence entre nullité et déchéance et le rôle de l'INPI."]
+    : ["Verdict : dossier à reprendre", "Relisez les deux infographies et la fiche ressource, puis rejouez."];
+  $("rTitle").textContent = name ? name + title.charAt(0).toLowerCase() + title.slice(1) : title;
+  $("rText").textContent = text;
+  $("recap").innerHTML = answers.map(a=>{
+    const q = Q[a.idx];
+    return `<li>${ic(a.good?"i-check":"i-x", a.good?"y":"n").replace('class="ic ','class="')}<span><b>${q.q}</b><br><span class="ans">${a.good ? "Bonne réponse" : "Votre réponse : " + q.o[a.k] + " · Attendu : " + q.o[q.a]}</span></span></li>`;
+  }).join("");
+  $("errorsOnly").hidden = answers.every(a=>a.good);
+  $("rTitle").setAttribute("tabindex","-1"); $("rTitle").focus();
+}
+$("startForm").addEventListener("submit", e => { e.preventDefault(); who = $("who").value.trim(); start(Q.map((_,k)=>k)); });
+$("next").addEventListener("click", next);
+$("again").addEventListener("click", () => start(Q.map((_,k)=>k)));
+$("errorsOnly").addEventListener("click", () => start(answers.filter(a=>!a.good).map(a=>a.idx)));
+document.addEventListener("keydown", e => {
+  if ($("quiz").hidden || e.target.tagName === "INPUT") return;
+  const map = {a:0,b:1,c:2,d:3,v:0,f:1,"1":0,"2":1,"3":2,"4":3};
+  const k = map[e.key.toLowerCase()];
+  const btns = [...$("opts").querySelectorAll(".opt:not([disabled])")];
+  if (k !== undefined && btns[k]) btns[k].click();
+});
+</script>
